@@ -1,14 +1,13 @@
 // Schéma Prisma pour la boutique Telegram.
-// Dev = SQLite (file:./dev.db), Prod = MySQL Hostinger.
-// Changer `provider` en "mysql" et fournir DATABASE_URL=mysql://... pour la prod.
+// Production Render = PostgreSQL. Fournir DATABASE_URL=postgresql://...
 
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native", "darwin-arm64"]
+  binaryTargets = ["native"]
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
