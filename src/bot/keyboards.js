@@ -129,14 +129,6 @@ function productDetailKeyboard(product, variants, productIndex, totalProducts, c
     ]);
   }
 
-  // Reviews button
-  const reviewCount = product._count?.reviews || product.reviewCount || 0;
-  rows.push([
-    Markup.button.callback(
-      `⭐ Reviews (${reviewCount})`,
-      `reviews:${product.id}`
-    ),
-  ]);
   rows.push([Markup.button.callback('🛒 View Cart', 'cart')]);
   rows.push([Markup.button.callback('🏠 Main Menu', 'home')]);
 
@@ -145,13 +137,12 @@ function productDetailKeyboard(product, variants, productIndex, totalProducts, c
 
 // ── Home menu (simplified for storefront) ──
 
-const homeMenu = (cartSummary = { count: 0, total: 0 }, reviewCount = 0) => {
+const homeMenu = (cartSummary = { count: 0, total: 0 }) => {
   const rows = [
     [Markup.button.callback('🛍️ Browse Products', 'categories:root')],
     [Markup.button.callback('🎫 Support Tickets', 'support')],
     [Markup.button.callback('📣 News Feed', 'info')],
     [
-      Markup.button.callback(`⭐ Reviews (${reviewCount})`, 'reviews'),
       Markup.button.callback('📋 My Orders', 'orders'),
     ],
     [

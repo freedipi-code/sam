@@ -8,7 +8,6 @@ const expectedTables = [
   'Category',
   'Product',
   'ProductVariant',
-  'Review',
   'Cart',
   'CartItem',
   'Order',

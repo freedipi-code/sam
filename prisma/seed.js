@@ -3,7 +3,6 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Reset (dev only)
-  await prisma.review.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.cartItem.deleteMany();

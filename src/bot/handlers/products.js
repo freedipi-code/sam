@@ -1,7 +1,7 @@
 const prisma = require('../../db/client');
 const cartService = require('../../services/cart.service');
 const { resolveImage } = require('../../utils/image');
-const { productDetailKeyboard, starsVisual } = require('../keyboards');
+const { productDetailKeyboard } = require('../keyboards');
 
 // ── Product Detail View ──
 
@@ -11,18 +11,12 @@ function truncate(text, maxLength) {
 }
 
 function buildProductCaption(product) {
-  const ratingStr = product.rating > 0
-    ? `${starsVisual(product.rating)} (${(product.rating / 2).toFixed(1)}/5)`
-    : 'No rating yet';
-
-  const reviewCount = product._count?.reviews || 0;
   const stockStatus = product.stock > 0 ? '🟢' : '🔴';
   const description = truncate(product.description || 'No description available.', 650);
 
   const lines = [
     `📦 ${product.name.toUpperCase()}`,
     '',
-    `⭐ Rating: ${ratingStr} from ${reviewCount} review${reviewCount !== 1 ? 's' : ''}`,
     `📦 Stock: ${stockStatus}`,
     '',
     '📝 Description:',
@@ -71,7 +65,7 @@ async function showProductDetail(ctx) {
 
   const product = await prisma.product.findUnique({
     where: { id: pId },
-    include: { variants: { orderBy: { sortOrder: 'asc' } }, _count: { select: { reviews: true } } },
+    include: { variants: { orderBy: { sortOrder: 'asc' } } },
   });
 
   if (!product || !product.active) {
@@ -162,10 +156,6 @@ function register(bot) {
   bot.action(/^addVar:(\d+):(\d+)$/, addVariantToCart);
   bot.action(/^add:(\d+)$/, addToCart);
   
-  // Empty stub for reviews/vendor for now
-  bot.action(/^reviews:(\d+)$/, async (ctx) => {
-    await ctx.answerCbQuery('Reviews feature coming soon!').catch(() => {});
-  });
   bot.hears('/vendor', (ctx) => ctx.reply('Vendor info coming soon.'));
 }
 

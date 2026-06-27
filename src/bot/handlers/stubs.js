@@ -17,7 +17,6 @@ function comingSoon(title) {
 
 function register(bot) {
   bot.action('wishlist', comingSoon('⭐ *Wishlist*'));
-  bot.action('reviews', comingSoon('🎉 *Reviews*'));
   bot.action('website', comingSoon('🔗 *Website*'));
   bot.action('group', comingSoon('👥 *Element Group*'));
 }

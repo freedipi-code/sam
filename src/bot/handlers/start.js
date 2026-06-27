@@ -1,5 +1,4 @@
 const shop = require('../../shop.config');
-const prisma = require('../../db/client');
 const cartService = require('../../services/cart.service');
 const { homeMenu } = require('../keyboards');
 
@@ -21,24 +20,20 @@ async function showHelp(ctx) {
 }
 
 async function getHomeStats(userId) {
-  const [cart, reviewCount] = await Promise.all([
-    cartService.getCartWithItems(userId),
-    prisma.review.count(),
-  ]);
+  const cart = await cartService.getCartWithItems(userId);
   return {
     cartSummary: {
       count: cart.items.reduce((sum, item) => sum + item.quantity, 0),
       total: cartService.computeTotal(cart),
     },
-    reviewCount,
   };
 }
 
 async function showHome(ctx) {
-  const { cartSummary, reviewCount } = await getHomeStats(ctx.state.user.id);
+  const { cartSummary } = await getHomeStats(ctx.state.user.id);
   const menuText = shop.mainMenuTitle || 'Choose an option:';
   const menuOpts = {
-    ...homeMenu(cartSummary, reviewCount),
+    ...homeMenu(cartSummary),
   };
 
   if (ctx.callbackQuery) {
