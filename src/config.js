@@ -6,12 +6,24 @@ function required(name) {
   return v;
 }
 
+function resolveWebhookDomain() {
+  const configuredDomain = process.env.WEBHOOK_DOMAIN?.trim();
+  if (configuredDomain) return configuredDomain.replace(/\/$/, '');
+
+  const renderHostname = process.env.RENDER_EXTERNAL_HOSTNAME?.trim();
+  if (renderHostname) return `https://${renderHostname.replace(/\/$/, '')}`;
+
+  return '';
+}
+
 const config = {
   botToken: required('BOT_TOKEN'),
   adminId: required('ADMIN_ID'),
   mode: process.env.BOT_MODE || 'polling', // 'polling' | 'webhook'
   webhook: {
-    domain: process.env.WEBHOOK_DOMAIN || '',
+    // Render provides RENDER_EXTERNAL_HOSTNAME automatically. Keeping
+    // WEBHOOK_DOMAIN as an override also supports custom domains.
+    domain: resolveWebhookDomain(),
     path: process.env.WEBHOOK_PATH || '/api/telegram/webhook',
     secret: process.env.WEBHOOK_SECRET || '',
     port: parseInt(process.env.PORT || '3000', 10),

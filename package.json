@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/index.js",
     "build": "prisma generate && node scripts/baseline-render-db.js && prisma migrate deploy",
+    "test": "node --test",
     "dev": "BOT_MODE=polling node src/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

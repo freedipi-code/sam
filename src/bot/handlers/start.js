@@ -20,6 +20,10 @@ async function showHelp(ctx) {
 }
 
 async function getHomeStats(userId) {
+  if (!userId) {
+    return { cartSummary: { count: 0, total: 0 } };
+  }
+
   const cart = await cartService.getCartWithItems(userId);
   return {
     cartSummary: {
@@ -30,7 +34,7 @@ async function getHomeStats(userId) {
 }
 
 async function showHome(ctx) {
-  const { cartSummary } = await getHomeStats(ctx.state.user.id);
+  const { cartSummary } = await getHomeStats(ctx.state.user?.id);
   const menuText = shop.mainMenuTitle || 'Choose an option:';
   const menuOpts = {
     ...homeMenu(cartSummary),

@@ -19,17 +19,26 @@ const bot = new Telegraf(config.botToken);
 // Middleware: get-or-create the Prisma User from telegramId
 bot.use(async (ctx, next) => {
   if (!ctx.from) return next();
+
+  // /start and /help must remain available even while the database is waking
+  // up or temporarily unavailable. Handlers for these commands do not need a
+  // persisted user and use an empty-cart fallback.
+  const command = ctx.message?.text?.match(/^\/(start|help)(?:@\w+)?(?:\s|$)/i)?.[1];
+  if (command) return next();
+
   const tgId = String(ctx.from.id);
-  let user = await prisma.user.findUnique({ where: { telegramId: tgId } });
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        telegramId: tgId,
-        username: ctx.from.username || null,
-        fullName: [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(' ') || null,
-      },
-    });
-  }
+  const user = await prisma.user.upsert({
+    where: { telegramId: tgId },
+    create: {
+      telegramId: tgId,
+      username: ctx.from.username || null,
+      fullName: [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(' ') || null,
+    },
+    update: {
+      username: ctx.from.username || null,
+      fullName: [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(' ') || null,
+    },
+  });
   ctx.state.user = user;
   return next();
 });
