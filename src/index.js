@@ -4,6 +4,8 @@ const config = require('./config');
 const bot = require('./bot/bot');
 const adminRouter = require('./bot/admin.router');
 
+let httpServer;
+
 function setupExpressApp(app) {
   // Mount admin API routes
   app.use('/api/admin', adminRouter);
@@ -22,7 +24,7 @@ async function startPolling() {
   const app = express();
   setupExpressApp(app);
   const port = config.webhook.port || 3000;
-  app.listen(port, () => {
+  httpServer = app.listen(port, () => {
     console.log(`📊 Admin Dashboard disponible sur http://localhost:${port}/admin`);
   });
 
@@ -38,19 +40,28 @@ async function startWebhook() {
 
   setupExpressApp(app);
 
-  // Webhook Telegram avec validation par secret token
-  app.use(await bot.createWebhook({
-    domain: config.webhook.domain,
-    path: config.webhook.path,
-    secret_token: config.webhook.secret || undefined,
-    drop_pending_updates: false,
+  // Bind the HTTP port before contacting Telegram. This lets Render observe a
+  // healthy service even if Telegram's API is temporarily slow to respond.
+  app.use(bot.webhookCallback(config.webhook.path, {
+    secretToken: config.webhook.secret || undefined,
   }));
 
-  app.listen(config.webhook.port, () => {
-    console.log(`🤖 Bot lancé en mode WEBHOOK sur le port ${config.webhook.port}`);
-    console.log(`   URL configurée : ${url}`);
-    console.log(`📊 Admin Dashboard disponible sur /admin`);
+  await new Promise((resolve, reject) => {
+    httpServer = app.listen(config.webhook.port, resolve);
+    httpServer.once('error', reject);
   });
+
+  console.log(`🌐 Serveur HTTP lancé sur le port ${config.webhook.port}`);
+  console.log('📊 Admin Dashboard disponible sur /admin');
+
+  await bot.telegram.setWebhook(url, {
+    secret_token: config.webhook.secret || undefined,
+    drop_pending_updates: false,
+  });
+  const me = await bot.telegram.getMe();
+  bot.botInfo = me;
+  console.log(`🤖 Bot lancé en mode WEBHOOK — @${me.username}`);
+  console.log(`   URL configurée : ${url}`);
 }
 
 (async () => {
@@ -66,6 +77,14 @@ async function startWebhook() {
   }
 })();
 
-// Arrêt propre
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+// Arrêt propre. In webhook mode Telegraf does not own the Express server, so
+// bot.stop() must only be called for polling.
+function shutdown(signal) {
+  if (config.mode !== 'webhook') {
+    try { bot.stop(signal); } catch (_) {}
+  }
+  if (httpServer) httpServer.close();
+}
+
+process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => shutdown('SIGTERM'));
