@@ -56,7 +56,7 @@ async function startPolling() {
   const app = express();
   setupExpressApp(app);
   const port = config.webhook.port || 3000;
-  httpServer = app.listen(port, () => {
+  httpServer = app.listen(port, '0.0.0.0', () => {
     console.log(`📊 Admin Dashboard disponible sur http://localhost:${port}/admin`);
   });
 
@@ -79,7 +79,7 @@ async function startWebhook() {
   }));
 
   await new Promise((resolve, reject) => {
-    httpServer = app.listen(config.webhook.port, resolve);
+    httpServer = app.listen(config.webhook.port, '0.0.0.0', resolve);
     httpServer.once('error', reject);
   });
 

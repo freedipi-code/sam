@@ -9,6 +9,7 @@ function loadConfig(env) {
     BOT_TOKEN: 'test-token',
     ADMIN_ID: '1',
     WEBHOOK_DOMAIN: '',
+    DOKPLOY_DEPLOY_URL: '',
     RENDER_EXTERNAL_URL: '',
     RENDER_EXTERNAL_HOSTNAME: '',
     ...env,
@@ -51,4 +52,12 @@ test('adds https to a configured hostname', () => {
   });
 
   assert.equal(config.webhook.domain, 'https://bot.example.com');
+});
+
+test('uses the Dokploy deployment URL when no domain is configured', () => {
+  const config = loadConfig({
+    DOKPLOY_DEPLOY_URL: 'https://sam-preview.example.com/',
+  });
+
+  assert.equal(config.webhook.domain, 'https://sam-preview.example.com');
 });

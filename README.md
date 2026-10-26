@@ -1,7 +1,7 @@
 # Boutique Telegram — MVP
 
-Bot Telegram e-commerce avec catégories, panier, commande et paiement crypto manuel (BTC / USDT).
-Stack : **Node.js + Telegraf** · **Express** (webhook) · **Prisma** (SQLite en dev, MySQL en prod).
+Bot Telegram e-commerce avec catégories, panier, commande et paiement crypto manuel (BTC / LTC).
+Stack : **Node.js + Telegraf** · **Express** (webhook) · **Prisma + PostgreSQL**.
 
 ## 1. Installation locale
 
@@ -41,43 +41,41 @@ L'admin (toi, via `ADMIN_ID`) reçoit en MP :
 - la nouvelle commande (récap + client + montant)
 - la preuve de paiement (forward du message du client)
 
-## 3. Déploiement sur Hostinger (sans VPS)
+## 3. Déploiement sur Hostinger avec Dokploy
 
-Hostinger en mutualisé peut héberger Node.js — il faut activer **Node.js** dans hPanel :
+Dans Dokploy, crée une **Application** reliée au dépôt GitHub :
 
-1. **Crée un sous-domaine** dédié, ex. `bot.monshop.com`, avec SSL activé.
-2. Dans hPanel → **Avancé → Node.js** :
-   - Version Node : 18+
-   - Application root : dossier où tu uploades ce projet
-   - Application URL : `bot.monshop.com`
-   - Startup file : `src/index.js`
-3. Upload du projet (FTP, Git, ou Gestionnaire de fichiers).
-4. SSH ou terminal Node : `npm install --omit=dev`
-5. Crée `.env` sur le serveur :
-   ```env
-   BOT_TOKEN=...
-   ADMIN_ID=...
-   BOT_MODE=webhook
-   WEBHOOK_DOMAIN=https://bot.monshop.com
-   WEBHOOK_PATH=/api/telegram/webhook
-   WEBHOOK_SECRET=une_chaine_aleatoire
-   DATABASE_URL="mysql://USER:PASS@srv-host:3306/u123_shop"
-   BTC_WALLET=bc1q...
-   USDT_WALLET=T...
-   USDT_NETWORK=TRC20
-   ```
-6. **Bascule Prisma sur MySQL** : édite `prisma/schema.prisma` et change `provider = "mysql"`.
-7. Migrations + seed sur la base Hostinger :
-   ```bash
-   npm run db:deploy
-   npm run db:seed
-   ```
-8. Démarre l'app via hPanel (bouton *Restart*).
-9. Vérifie : `https://bot.monshop.com/health` doit répondre `{ "ok": true }`.
+- branche : `main`
+- build type : `Dockerfile`
+- Dockerfile path : `Dockerfile`
+- Docker context path : `.`
+- port du domaine : `3000`
+- health check : `/health`
 
-Telegram appellera automatiquement `https://bot.monshop.com/api/telegram/webhook` — la route est créée par Telegraf au démarrage.
+Ajoute ensuite les variables suivantes dans l'onglet **Environment** :
 
-> 💡 Si Hostinger n'accepte pas Node.js sur ton offre, l'alternative la plus simple est de déployer le bot sur **Railway / Render / Fly.io** (free tier) et de laisser Hostinger héberger juste le dashboard admin plus tard.
+```env
+BOT_TOKEN=...
+ADMIN_ID=...
+BOT_MODE=webhook
+WEBHOOK_DOMAIN=https://bot.ton-domaine.com
+WEBHOOK_PATH=/api/telegram/webhook
+WEBHOOK_SECRET=une_chaine_aleatoire
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/telegram_shop
+BTC_WALLET=...
+LTC_WALLET=...
+PORT=3000
+```
+
+Le domaine configuré dans Dokploy doit pointer sur le port interne `3000`. Après
+le premier déploiement, exécute `npx prisma migrate deploy` dans le terminal du
+conteneur, puis `node prisma/seed.js` uniquement si la base doit être initialisée.
+
+Dans l'onglet **Deployments**, copie le webhook Dokploy et ajoute-le comme webhook
+du dépôt GitHub pour redéployer automatiquement chaque push sur `main`.
+
+Le endpoint `https://bot.ton-domaine.com/health` doit renvoyer `ok: true` et
+`webhookReady: true`.
 
 ## 4. Commandes utiles
 

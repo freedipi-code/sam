@@ -15,6 +15,9 @@ function resolveWebhookDomain() {
     return domain.replace(/\/$/, '');
   }
 
+  const dokployUrl = process.env.DOKPLOY_DEPLOY_URL?.trim();
+  if (dokployUrl) return dokployUrl.replace(/\/$/, '');
+
   const renderUrl = process.env.RENDER_EXTERNAL_URL?.trim();
   if (renderUrl) return renderUrl.replace(/\/$/, '');
 
