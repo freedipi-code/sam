@@ -9,6 +9,7 @@ function loadConfig(env) {
     BOT_TOKEN: 'test-token',
     ADMIN_ID: '1',
     WEBHOOK_DOMAIN: '',
+    RENDER_EXTERNAL_URL: '',
     RENDER_EXTERNAL_HOSTNAME: '',
     ...env,
   });
@@ -30,6 +31,23 @@ test('prefers an explicitly configured webhook domain', () => {
   const config = loadConfig({
     WEBHOOK_DOMAIN: 'https://bot.example.com/',
     RENDER_EXTERNAL_HOSTNAME: 'sam-example.onrender.com',
+  });
+
+  assert.equal(config.webhook.domain, 'https://bot.example.com');
+});
+
+test('uses the full Render URL when available', () => {
+  const config = loadConfig({
+    RENDER_EXTERNAL_URL: 'https://sam-example.onrender.com/',
+    RENDER_EXTERNAL_HOSTNAME: 'ignored.onrender.com',
+  });
+
+  assert.equal(config.webhook.domain, 'https://sam-example.onrender.com');
+});
+
+test('adds https to a configured hostname', () => {
+  const config = loadConfig({
+    WEBHOOK_DOMAIN: 'bot.example.com/',
   });
 
   assert.equal(config.webhook.domain, 'https://bot.example.com');

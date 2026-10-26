@@ -8,7 +8,15 @@ function required(name) {
 
 function resolveWebhookDomain() {
   const configuredDomain = process.env.WEBHOOK_DOMAIN?.trim();
-  if (configuredDomain) return configuredDomain.replace(/\/$/, '');
+  if (configuredDomain) {
+    const domain = /^https?:\/\//i.test(configuredDomain)
+      ? configuredDomain
+      : `https://${configuredDomain}`;
+    return domain.replace(/\/$/, '');
+  }
+
+  const renderUrl = process.env.RENDER_EXTERNAL_URL?.trim();
+  if (renderUrl) return renderUrl.replace(/\/$/, '');
 
   const renderHostname = process.env.RENDER_EXTERNAL_HOSTNAME?.trim();
   if (renderHostname) return `https://${renderHostname.replace(/\/$/, '')}`;

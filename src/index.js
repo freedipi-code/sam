@@ -5,6 +5,10 @@ const bot = require('./bot/bot');
 const adminRouter = require('./bot/admin.router');
 
 let httpServer;
+let webhookRetryTimer;
+let webhookReady = false;
+
+const WEBHOOK_RETRY_MS = 10_000;
 
 function setupExpressApp(app) {
   // Mount admin API routes
@@ -12,7 +16,35 @@ function setupExpressApp(app) {
   // Serve admin static dashboard
   app.use('/admin', express.static(path.join(__dirname, 'public/admin')));
   // Health check
-  app.get('/health', (_req, res) => res.json({ ok: true }));
+  app.get('/health', (_req, res) => res.json({
+    ok: true,
+    mode: config.mode,
+    webhookReady: config.mode === 'webhook' ? webhookReady : undefined,
+  }));
+}
+
+async function registerWebhook(url) {
+  try {
+    await bot.telegram.setWebhook(url, {
+      secret_token: config.webhook.secret || undefined,
+      drop_pending_updates: false,
+    });
+    const me = await bot.telegram.getMe();
+    bot.botInfo = me;
+    webhookReady = true;
+    console.log(`🤖 Bot lancé en mode WEBHOOK — @${me.username}`);
+    console.log(`   URL configurée : ${url}`);
+  } catch (error) {
+    webhookReady = false;
+    console.error(
+      `Échec de l'enregistrement du webhook; nouvel essai dans ${WEBHOOK_RETRY_MS / 1000}s :`,
+      error.message,
+    );
+    webhookRetryTimer = setTimeout(() => {
+      webhookRetryTimer = undefined;
+      void registerWebhook(url);
+    }, WEBHOOK_RETRY_MS);
+  }
 }
 
 async function startPolling() {
@@ -54,14 +86,9 @@ async function startWebhook() {
   console.log(`🌐 Serveur HTTP lancé sur le port ${config.webhook.port}`);
   console.log('📊 Admin Dashboard disponible sur /admin');
 
-  await bot.telegram.setWebhook(url, {
-    secret_token: config.webhook.secret || undefined,
-    drop_pending_updates: false,
-  });
-  const me = await bot.telegram.getMe();
-  bot.botInfo = me;
-  console.log(`🤖 Bot lancé en mode WEBHOOK — @${me.username}`);
-  console.log(`   URL configurée : ${url}`);
+  // Telegram can be temporarily unavailable while Render is starting. Keep
+  // the HTTP service alive and retry instead of crashing the whole process.
+  void registerWebhook(url);
 }
 
 (async () => {
@@ -80,6 +107,7 @@ async function startWebhook() {
 // Arrêt propre. In webhook mode Telegraf does not own the Express server, so
 // bot.stop() must only be called for polling.
 function shutdown(signal) {
+  if (webhookRetryTimer) clearTimeout(webhookRetryTimer);
   if (config.mode !== 'webhook') {
     try { bot.stop(signal); } catch (_) {}
   }
